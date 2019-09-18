@@ -47,4 +47,6 @@ public:
 	int get_max_tries();
 
 	int get_time_out();
+
+	char * get_local_ip();
 };
