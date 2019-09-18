@@ -30,7 +30,7 @@ public:
 
 	char* make_ack(char* block);
 
-	char* make_err(char *errcode, char* errmsg);
+	char* make_err(char *error_code, char* error_message);
 
 	char * get_port();
 
