@@ -32,11 +32,13 @@ void client::init(int argc, char **argv) {
     }
     printf("Conectado con %s:%d\n",inet_ntoa(cliente.sin_addr),htons(cliente.sin_port));
     //inet_ntoa(); está definida en <arpa/inet.h>
-    printf("Escribe un mensaje: ");
-    fgets(buffer, 100, stdin);
-    send(conexion, buffer, 100, 0); //envio
-    bzero(buffer, 100);
-    recv(conexion, buffer, 100, 0); //recepción
-    printf("%s", buffer);
+    while(1){
+        printf("Escribe un mensaje: ");
+        fgets(buffer, 100, stdin);
+        send(conexion, buffer, 100, 0); //envio
+        bzero(buffer, 100);
+        recv(conexion, buffer, 100, 0); //recepción
+        printf("%s", buffer);
+    }
     return;
 }

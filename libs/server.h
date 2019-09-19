@@ -34,6 +34,7 @@ private:
     socklen_t longc;
     struct sockaddr_in servidor, cliente;
     char buffer[100];
+    Header *header;
 
 };
 
