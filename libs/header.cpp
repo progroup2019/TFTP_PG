@@ -29,7 +29,7 @@ void Header::s_to_i(char *f, int n){
 // makes RRQ packet
 char* Header::make_rrq(char *file_name){
 	char *packet;
-	packet = malloc(2+strlen(file_name));
+	packet = (char *)malloc(2+strlen(file_name));
 	memset(packet, 0, sizeof packet);
 	strcat(packet, RRQ); //option code
 	strcat(packet, file_name);
@@ -39,7 +39,7 @@ char* Header::make_rrq(char *file_name){
 // makes WRQ packet
 char* Header::make_wrq(char *file_name){
 	char *packet;
-	packet = malloc(2+strlen(file_name));
+	packet = (char *)malloc(2+strlen(file_name));
 	memset(packet, 0, sizeof packet);
 	strcat(packet, WRQ); //option code
 	strcat(packet, file_name);
@@ -51,7 +51,7 @@ char* Header::make_data_pack(int block, char *data){
 	char *packet;
 	char temp[3];
 	s_to_i(temp, block);
-	packet = malloc(4+strlen(data));
+	packet = (char *)malloc(4+strlen(data));
 	memset(packet, 0, sizeof packet);
 	strcat(packet, PCKT); //option code
 	strcat(packet, temp);
@@ -62,7 +62,7 @@ char* Header::make_data_pack(int block, char *data){
 // makes ACK packet
 char* Header::make_ack(char* block){
 	char *packet;
-	packet = malloc(2+strlen(block));
+	packet = (char *)malloc(2+strlen(block));
 	memset(packet, 0, sizeof packet);
 	strcat(packet, ACK); //option code
 	strcat(packet, block);
@@ -72,7 +72,7 @@ char* Header::make_ack(char* block){
 // makes ERR packet
 char* Header::make_err(char *error_code, char* error_message){
 	char *packet;
-	packet = malloc(4+strlen(error_message));
+	packet = (char *)malloc(4+strlen(error_message));
 	memset(packet, 0, sizeof packet);
 	strcat(packet, ERR); //option code
 	strcat(packet, error_code);
@@ -80,11 +80,11 @@ char* Header::make_err(char *error_code, char* error_message){
 	return packet;
 }
 
-char * Header::get_port(){
+char* Header::get_port(){
 	return my_port;
 }
 
-char * Header::get_server_port(){
+int Header::get_server_port(){
 	return server_port;
 }
 
@@ -157,9 +157,9 @@ char * Header::get_local_ip(){
 }
 
 // Constructor function
-Header::Header(char* port, char* actual_server_port, int buf_len, int read_len, int file_name_len, int packets, int tries, int timeout){
-	strcpy(my_port, port);
-	strcpy(server_port, actual_server_port);
+Header::Header(char* port, int actual_server_port, int buf_len, int read_len, int file_name_len, int packets, int tries, int timeout){
+	my_port = port;
+	server_port = actual_server_port;
 	max_buf_len = buf_len;
 	max_read_len = read_len;
 	max_filename_len = file_name_len;

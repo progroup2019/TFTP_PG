@@ -6,8 +6,8 @@
 
 class Header{
 private:
-	char* my_port; // Port to be opened on server
-	char* server_port; // Port users will be connecting to
+	char *my_port; // Port to be opened on server
+	int server_port; // Port users will be connecting to
 	int max_buf_len; // Sockaddr, IPv4 or IPv6:
 	int max_read_len; // Maximum data size that can be sent on one packet
 	int max_filename_len; // Maximum length of file name supported
@@ -16,7 +16,7 @@ private:
 	int time_out; //Time out in seconds
 
 public:
-	Header(char* port, char* actual_server_port, int buf_len, int read_len, int file_name_len, int packets, int tries, int timeout);
+	Header(char* port, int actual_server_port, int buf_len, int read_len, int file_name_len, int packets, int tries, int timeout);
 
 	~Header();
 
@@ -32,9 +32,9 @@ public:
 
 	char* make_err(char *error_code, char* error_message);
 
-	char * get_port();
+	char*  get_port();
 
-	char * get_server_port();
+	int get_server_port();
 
 	int get_max_buf_len();
 
