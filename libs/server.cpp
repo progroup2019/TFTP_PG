@@ -46,3 +46,8 @@ void server::init() {
 
     close(conexion_servidor);
 }
+
+
+void server::get_command(char * buffer) {
+
+}

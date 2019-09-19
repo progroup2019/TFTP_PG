@@ -23,17 +23,17 @@ public:
 
     void init();
 
-    int conexion_servidor, conexion_cliente, puerto;
-    socklen_t longc;
-    struct sockaddr_in servidor, cliente;
-    char buffer[100];
-
+    void get_command(char *buffer);
 
 private:
 
     /*
      * Declared variables
      */
+    int conexion_servidor, conexion_cliente, puerto;
+    socklen_t longc;
+    struct sockaddr_in servidor, cliente;
+    char buffer[100];
 
 };
 
