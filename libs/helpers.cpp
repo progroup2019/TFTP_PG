@@ -101,3 +101,16 @@ char **helpers::get_my_ipv6() {
 char *helpers::get_my_ip_public() {
     return nullptr;
 }
+
+
+int helpers::get_packet_type(char *buffer) {
+    if (strlen(buffer)){
+        if (buffer[0] != '0') return -1;
+
+        return  buffer[1]-'0';
+
+    }else{
+        perror("Paquete nulo");
+        return -1;
+    }
+}
