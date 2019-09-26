@@ -99,20 +99,18 @@ char **helpers::get_my_ipv6() {
 }
 
 char *helpers::get_my_ip_public() {
-    return nullptr;
+    return NULL;
 }
 
 
-int helpers::get_packet_type(char *buffer) {
-    if (strlen(buffer)){
-        if (buffer[0] != '0') return -1;
-
-        return  buffer[1]-'0';
-
-    }else{
-        perror("Paquete nulo");
+int helpers::get_packet_type(BYTE *buffer) {
+    if(buffer == NULL)
+    {
+        printf("Error al obtener tipo de paquete: Paquete nulo.\n");
         return -1;
     }
+    int packetType = buffer[0]*256+buffer[1];
+    return packetType;
 }
 
 char *helpers::get_filename(char *buffer) {
@@ -159,4 +157,50 @@ char *helpers::get_data(char *buffer, int data_size) {
     memcpy(data, buffer+4, data_size);
 
     return data;
+}
+
+
+BYTE * helpers::WRQ_command(char *filename, char *mode) {
+    int file_length = strlen(filename);
+    int mode_length = strlen(mode);
+    int i;
+
+    BYTE * header = (BYTE *) calloc(2 + file_length + 1 + mode_length + 1, sizeof(BYTE));
+
+    header[0] = 0;
+    header[1] = 1;
+
+    for(i=0; i < file_length; i++){
+        header[2+i] = filename[i];
+    }
+
+    header[2 + file_length] = 0;
+
+    for(i=0; i < mode_length; i++){
+        header[2 + file_length + 1 + i] = mode[i];
+    }
+
+    header[2 + file_length + 1 + mode_length] = 0;
+
+    return header;
+}
+
+
+BYTE *helpers::prepare_data_to_send(int Block, BYTE *data) {
+    int dataLength = strlen(reinterpret_cast<const char *>(data));
+    int i;
+
+    BYTE * header = (BYTE *) calloc( 2+2+dataLength, sizeof(BYTE));
+
+    header[0] = 0;
+    header[1] = 3;
+    if(Block >= 256*256){
+        printf("Overflow number packet.\n");
+        return NULL;
+    }
+    header[2] = Block/256;
+    header[3] = Block%256;
+    for(i = 0; i<dataLength; i++)
+        header[4+i] = data[i];
+    return header;
 }
