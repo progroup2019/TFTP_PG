@@ -7,5 +7,9 @@ add_library(libs STATIC libs/checksum.h libs/checksum.cpp libs/header.cpp libs/h
 
 add_executable(TFTP_PG main.cpp)
 
+add_executable(TFTP_PG_C main2.cpp)
+
 
 target_link_libraries(TFTP_PG libs)
+
+target_link_libraries(TFTP_PG_C libs)

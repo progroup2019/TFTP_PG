@@ -2,7 +2,8 @@
 
 #ifndef TFTP_PG_SERVER_H
 #define TFTP_PG_SERVER_H
-#define  MAX_CLIENTS_CONNECTION 10
+#define  MAX_CLIENTS_CONNECTION 128
+#define BUFFER_SIZE 512
 
 #include "header.h"
 #include <stdio.h>
@@ -25,6 +26,8 @@ public:
 
     void get_command(char *buffer);
 
+    void server_get_file(char *buffer);
+
 private:
 
     /*
@@ -33,8 +36,9 @@ private:
     int conexion_servidor, conexion_cliente, puerto;
     socklen_t longc;
     struct sockaddr_in servidor, cliente;
-    char buffer[100];
+    char buffer[512];
     Header *header;
+    fd_set read_mask;
 
 };
 

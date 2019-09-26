@@ -28,9 +28,9 @@ public:
 
 	char* make_data_pack(int block, char *data);
 
-	char* make_ack(char* block);
+	static char* make_ack(char* block);
 
-	char* make_err(char *error_code, char* error_message);
+	static char* make_err(char *error_code, char* error_message);
 
 	char*  get_port();
 

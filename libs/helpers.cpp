@@ -114,3 +114,49 @@ int helpers::get_packet_type(char *buffer) {
         return -1;
     }
 }
+
+char *helpers::get_filename(char *buffer) {
+    if (strlen(buffer)){
+        int i;
+        for (i = 2; i<strlen(buffer); i++){
+            if(buffer[i] == 0) break;
+        }
+
+        char * filename = (char *) malloc((i-1)* sizeof(char));
+        for(int j = 0; j<i; j++)
+            filename[j] = buffer[2+j];
+        filename[i] = '\0';
+        return filename;
+
+    } else {
+        perror("Paquete nulo");
+        return NULL;
+    }
+}
+
+
+int helpers::get_packet_number(unsigned char *packet) {
+    if(packet == NULL)
+    {
+        printf("Error al obtener el numero del paquete: Paquete nulo.\n");
+        return -1;
+    }
+
+    int nPacket = packet[2]*256+packet[3];
+    return nPacket;
+}
+
+
+char *helpers::get_data(char *buffer, int data_size) {
+    if(buffer == NULL)
+    {
+        printf("Error al obtener el paquete: Paquete nulo.\n");
+        return NULL;
+    }
+
+    char * data = (char *) malloc((data_size+1)* sizeof(char));
+
+    memcpy(data, buffer+4, data_size);
+
+    return data;
+}

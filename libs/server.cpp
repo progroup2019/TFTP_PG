@@ -1,138 +1,130 @@
 #include <cstdio>
+#include <stdlib.h>
 #include <fstream>
 #include "server.h"
+#include "helpers.h"
 server::server() {
-    header = new Header("6969",6969,550,512,150,99,3,5);
-    puerto = 6969;
-    conexion_servidor = socket(AF_INET, SOCK_STREAM, 0); //creamos el socket
-    bzero((char *)&servidor, sizeof(servidor)); //llenamos la estructura de 0's
-    servidor.sin_family = AF_INET; //asignamos a la estructura
-    servidor.sin_port = htons(puerto);
-    servidor.sin_addr.s_addr = INADDR_ANY; //esta macro especifica nuestra dirección
+    // header = new Header("6969",6969,550,512,150,99,3,5);
+    memset ((char *)&servidor, 0, sizeof(struct sockaddr_in));
+    memset ((char *)&cliente, 0, sizeof(struct sockaddr_in));
+    longc = sizeof(struct sockaddr_in);
+
+    servidor.sin_family = AF_INET;
+    servidor.sin_addr.s_addr = INADDR_ANY;
+    servidor.sin_port = htons(6969);
+
+    conexion_servidor = socket(AF_INET, SOCK_DGRAM, 0); //creamos el socket
 
 }
 
 void server::init() {
-    if(bind(conexion_servidor, (struct sockaddr *)&servidor, sizeof(servidor)) < 0)
+    if(bind(conexion_servidor, (struct sockaddr *)&servidor, sizeof(struct sockaddr_in)) < 0)
     {
         printf("Error al asociar el puerto a la conexion\n");
         close(conexion_servidor);
         return;
     }
-    listen(conexion_servidor, 3); //Estamos a la escucha
-    printf("A la escucha en el puerto %d\n", ntohs(servidor.sin_port));
+
+
+    FD_ZERO(&read_mask);
+    FD_SET(conexion_servidor, &read_mask);
+    int type_option = -1;
+    char* filename;
     while (1){
-        longc = sizeof(cliente); //Asignamos el tamaño de la estructura a esta variable
-        conexion_cliente = accept(conexion_servidor, (struct sockaddr *)&cliente, &longc); //Esperamos una conexion
-        if(conexion_cliente<0)
-        {
-            printf("Error al aceptar trafico\n");
-            close(conexion_servidor);
+        if (FD_ISSET(conexion_servidor, &read_mask)) {
+            int request = recvfrom(conexion_servidor, buffer, BUFFER_SIZE -1, 0,(struct sockaddr *)&cliente, &longc);
+
+            if (request == -1){
+                printf("Error recibiendo\n");
+                return;
+            }
+
+            buffer[request] = '\0';
+
+            char hostname[MAX_CLIENTS_CONNECTION];
+
+            if(getnameinfo((struct sockaddr *)&cliente,sizeof(cliente),hostname,MAX_CLIENTS_CONNECTION,NULL,0,0)){
+                if (inet_ntop(AF_INET, &(cliente.sin_addr), hostname, MAX_CLIENTS_CONNECTION) == NULL)
+                    perror(" inet_ntop \n");
+            }
+
+            type_option = helpers::get_packet_type(buffer);
+
+            if(type_option == 2){
+                filename = helpers::get_filename(buffer);
+                server_get_file(filename);
+            }
+
+        }
+        break;
+    }
+}
+
+
+void server::server_get_file(char* filename){
+    printf("get_file %s",filename);
+    FILE * fichero;
+    int addrlen = sizeof(struct sockaddr_in);
+    int cc;
+    char buffer_file[BUFFER_SIZE+4];
+    fichero = fopen(filename,"rb");
+    if (fichero !=NULL){
+        char *e_msg = Header::make_err("06", "File already exists");
+        fclose(fichero);
+        int ack = sendto (conexion_servidor, e_msg, BUFFER_SIZE, 0, (struct sockaddr *)&cliente, addrlen);
+        if ( ack == -1) {
+            perror("Error send ACK");
             return;
         }
-        printf("Conectando con %s:%d\n", inet_ntoa(cliente.sin_addr),htons(cliente.sin_port));
-        if(recv(conexion_cliente, buffer, 100, 0) < 0)
-        { //Comenzamos a recibir datos del cliente
-            //Si recv() recibe 0 el cliente ha cerrado la conexion. Si es menor que 0 ha habido algún error.
-            printf("Error al recibir los datos\n");
-            close(conexion_cliente);
-        }
-        else
-        {
-            get_command(buffer);
-            bzero((char *)&buffer, sizeof(buffer));
-        }
     }
 
-    close(conexion_servidor);
-}
+    fichero = fopen(filename,"wb");
+    char* ack_msg = Header::make_ack("0");
+    if(sendto (conexion_servidor, ack_msg, BUFFER_SIZE, 0, (struct sockaddr *)&cliente, addrlen) == -1){
+        perror("Error send ACK");
+        return;
+    }
 
-
-void server::get_command(char * buffer) {
-    int numbytes;
-
-    if(buffer[0] == '0' && buffer[1] == '1'){
-        /**
-         * RRQ
-         */
-
-    }else if (buffer[0] == '0' && buffer[1] == '2'){
-        /**
-         * WRQ
-         */
-         /**
-          * prepare ACK
-          */
-        char *message = header->make_ack("00");
-        if((numbytes = send(conexion_cliente,message,strlen(message),0)) == -1){
-            perror("SERVER ACK: sendto");
-            //exit(1);
-        }
-
-        /**
-         * get filename
-        */
-        char filename[header->get_max_filename_len()];
-        strcpy(filename, buffer+2);
-
-        /**
-         * checking if exists file
-        */
-        if(access(filename, F_OK) != -1){ //SENDING ERROR PACKET - DUPLICATE FILE
-            fprintf(stderr,"SERVER: file %s already exists, sending error packet\n", filename);
-            char *e_msg = header->make_err("06", "ERROR_FILE_ALREADY_EXISTS");
-            send(conexion_cliente,e_msg,strlen(e_msg),0);
-            exit(1);
-        }
-
-        FILE *fp = fopen(filename, "wt");
-        if(fp == NULL || access(filename, W_OK) == -1){ //SENDING ERROR PACKET - ACCESS DENIED
-            fprintf(stderr,"SERVER: file %s access denied, sending error packet\n", filename);
-            char *e_msg = header->make_err("05", "ERROR_ACCESS_DENIED");
-            send(conexion_cliente,e_msg,strlen(e_msg),0);
-            exit(1);
-        }
-
-        int written_file;
-        char buffer_file[4+header->get_max_read_len()];
-        fclose(fp);
-        while(1){
-            if (recv(conexion_cliente, buffer_file, strlen(buffer_file), 0) < 0){
-                close(conexion_cliente);
-                fclose(fp);
-                break;
-            } else{
-                if (buffer_file[0] == '0' && buffer_file[1] == '3')
-                {
-                    std::ofstream outfile (filename,std::ofstream::out);
-                    outfile.write(buffer_file+4,strlen(buffer_file));
-                    outfile.close();
-                    char *message = header->make_ack("00");
-                    if((numbytes = send(conexion_cliente,message,strlen(message),0)) == -1){
-                        perror("SERVER ACK: sendto");
-                        close(conexion_cliente);
-                        fclose(fp);
-                        break;
-                    }
-                }else{
-                    char *e_msg = header->make_err("04", "ERROR_ACCESS_DENIED");
-                    send(conexion_cliente,e_msg,strlen(e_msg),0);
-                    close(conexion_cliente);
-                    fclose(fp);
-                    break;
-                }
-                if (strlen(buffer_file) < header->get_max_read_len()+4)
-                {
-                    fclose(fp);
-                    break;
-                }
-
+    bool end = false;
+    int packet_number = 0;
+    while (1){
+        packet_number++;
+        cc = recvfrom(conexion_servidor, buffer_file, BUFFER_SIZE+4, 0,(struct sockaddr *)&cliente, &longc);
+        if(helpers::get_packet_type(buffer_file)!=3){
+            fclose(fichero);
+            char *e_msg = Header::make_err("04", "Tipo de paquete no esperado");
+            int ack = sendto (conexion_servidor, e_msg, BUFFER_SIZE, 0, (struct sockaddr *)&cliente, addrlen);
+            if ( ack == -1) {
+                perror("Error send ACK");
+                return;
             }
+            perror("Error tipo de paquete no esperado");
+            return;
+        }
+        printf("%s",buffer_file);
+        if(helpers::get_packet_number(reinterpret_cast<unsigned char *>(buffer_file)) != packet_number){
+            fclose(fichero);
+            char *e_msg = Header::make_err("04", "Numero de bloque invalido");
+            int ack = sendto (conexion_servidor, e_msg, BUFFER_SIZE, 0, (struct sockaddr *)&cliente, addrlen);
+            if ( ack == -1) {
+                perror("Error send ACK");
+                return;
+            }
+            perror("Numero de bloque invalido");
+            return;
         }
 
-    } else{
-        /**
-         * wrong command
-         */
+        fwrite(helpers::get_data(buffer_file,cc-4),cc-4,1,fichero);
+
+        char* ack_msg = Header::make_ack(reinterpret_cast<char *>(packet_number));
+        if(sendto (conexion_servidor, ack_msg, BUFFER_SIZE, 0, (struct sockaddr *)&cliente, addrlen) == -1){
+            perror("Error send ACK");
+            return;
+        }
+
+        fclose(fichero);
+        break;
     }
 }
+
+
