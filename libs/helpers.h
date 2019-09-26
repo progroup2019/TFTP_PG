@@ -12,7 +12,7 @@ public:
 
     static int get_packet_type(BYTE * buffer);
 
-    static char * get_filename(char* buffer);
+    static char * get_filename(BYTE* buffer);
 
     static int get_packet_number(unsigned char *packet);
 

@@ -7,18 +7,28 @@
 #include<netinet/in.h>
 #include<netdb.h>
 
+#include "helpers.h"
+
 #ifndef TFTP_PG_CLIENT_H
 #define TFTP_PG_CLIENT_H
 
+#define BUFFER_SIZE	1024
+#define PORT 6969
+#define MAXHOST 512
+#define TAM_BUFFER 10
 
 class client {
 public:
     client();
     void init(int argc, char **argv);
-    struct sockaddr_in cliente; //Declaración de la estructura con información para la conexión
-    struct hostent *servidor; //Declaración de la estructura con información del host
-    int puerto, conexion;
-    char buffer[100];
+    int sock_client;
+    struct sockaddr_in my_addr;	/* for local socket address */
+    struct sockaddr_in serv_addr;	/* for server socket address */
+    struct in_addr req_addr;
+    socklen_t	addrlen, n_retry;
+    struct addrinfo hints, *res;
+
+    void send_file(int socket,char* filename,char* mode,struct sockaddr_in clientaddr_in);
 
 };
 

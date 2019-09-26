@@ -113,23 +113,24 @@ int helpers::get_packet_type(BYTE *buffer) {
     return packetType;
 }
 
-char *helpers::get_filename(char *buffer) {
-    if (strlen(buffer)){
-        int i;
-        for (i = 2; i<strlen(buffer); i++){
-            if(buffer[i] == 0) break;
-        }
-
-        char * filename = (char *) malloc((i-1)* sizeof(char));
-        for(int j = 0; j<i; j++)
-            filename[j] = buffer[2+j];
-        filename[i] = '\0';
-        return filename;
-
-    } else {
-        perror("Paquete nulo");
+char *helpers::get_filename(BYTE *buffer) {
+    if(buffer == NULL)
+    {
+        printf("Null packet.\n");
         return NULL;
     }
+
+    int i;
+    int dataLength;
+    for(dataLength = 0; buffer[2+dataLength]!=0; dataLength++){
+        if(buffer[2+dataLength]==0)
+            break;
+    }
+    char * filename = (char *) malloc((dataLength+1)* sizeof(char));
+    for(i = 0; i<dataLength; i++)
+        filename[i] = buffer[2+i];
+    filename[dataLength] = '\0';
+    return filename;
 }
 
 
