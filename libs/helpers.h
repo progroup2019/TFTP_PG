@@ -16,11 +16,15 @@ public:
 
     static int get_packet_number(unsigned char *packet);
 
-    static char * get_data(char* buffer,int data_size);
+    static char * get_data(BYTE* buffer,int data_size);
 
     static BYTE * WRQ_command(char* filename, char* mode);
 
     static BYTE * prepare_data_to_send(int Block,BYTE * data);
+
+    static BYTE * RRQ_command(char* filename, char * mode);
+
+    static BYTE * ACK(int block);
 };
 
 

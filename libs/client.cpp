@@ -192,7 +192,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
         }
 
         if(helpers::get_packet_number(reinterpret_cast<unsigned char *>(command)) != packet_number){
-            printf("Bloque incorrecton");
+            printf("Bloque incorrecto");
             fclose(file);
             free(data_file);
             free(last_data_file);
@@ -210,4 +210,80 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
     free(last_data_file);
     return;
 
+}
+
+void client::receiving_file(int socket, char *filename, char *mode, struct sockaddr_in clientaddr_in) {
+    int packet_number= 0, end= 0;
+    int bytes_read, type_option;
+
+    char *buffer;
+
+    char data_file[PACKET_SIZE+4];
+
+    FILE *file;
+
+    socklen_t addrlen;
+    addrlen = sizeof(struct sockaddr_in);
+
+
+    socklen_t len;
+    len = sizeof(len);
+    if (getsockname(socket, (struct sockaddr *)&my_addr, &len) == -1)
+        perror("getsockname");
+
+
+    int port_number = ntohs(my_addr.sin_port);
+
+    file = fopen(filename,"rb");
+
+    if (file !=NULL){
+        printf("File %s exists\n",filename);
+        fclose(file);
+        return;
+    }
+
+    file =fopen(filename,"wb");
+
+    buffer = reinterpret_cast<char *>(helpers::RRQ_command(filename, mode));
+
+    sendto (socket, buffer, 2+strlen(filename)+1+strlen(mode)+1,0, (struct sockaddr *)&clientaddr_in, addrlen);
+
+    while (end != 2){
+        packet_number++;
+
+        bytes_read = recvfrom (socket, data_file, PACKET_SIZE+4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
+        if(bytes_read == -1){
+            printf("Error receiving data\n");
+        }
+
+        type_option = helpers::get_packet_type(reinterpret_cast<BYTE *>(data_file));
+
+        if(type_option == 5){
+            fclose(file);
+            perror(data_file);
+            return;
+        }
+
+        if (type_option != 3){
+            printf("Packet type invalid");
+            fclose(file);
+            return;
+        }
+
+        if (helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)) != packet_number){
+            printf("Bloque incorrecton");
+            fclose(file);
+            return;
+        }
+
+        fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_read + 4), bytes_read + 4, 1, file);
+
+        buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
+        sendto (socket, buffer, 4,0, (struct sockaddr *)&clientaddr_in, addrlen);
+        if (bytes_read-4 < PACKET_SIZE) end = 2;
+    }
+
+    fclose(file);
+
+    return;
 }

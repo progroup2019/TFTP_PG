@@ -30,6 +30,8 @@ public:
 
     void send_file(int socket,char* filename,char* mode,struct sockaddr_in clientaddr_in);
 
+    void receiving_file(int socket, char* filename,char * mode,struct sockaddr_in clientaddr_in);
+
 };
 
 

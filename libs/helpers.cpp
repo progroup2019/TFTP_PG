@@ -146,10 +146,10 @@ int helpers::get_packet_number(unsigned char *packet) {
 }
 
 
-char *helpers::get_data(char *buffer, int data_size) {
+char *helpers::get_data(BYTE *buffer, int data_size) {
     if(buffer == NULL)
     {
-        printf("Error al obtener el paquete: Paquete nulo.\n");
+        printf("Packet null.\n");
         return NULL;
     }
 
@@ -169,7 +169,7 @@ BYTE * helpers::WRQ_command(char *filename, char *mode) {
     BYTE * header = (BYTE *) calloc(2 + file_length + 1 + mode_length + 1, sizeof(BYTE));
 
     header[0] = 0;
-    header[1] = 1;
+    header[1] = 2;
 
     for(i=0; i < file_length; i++){
         header[2+i] = filename[i];
@@ -203,5 +203,41 @@ BYTE *helpers::prepare_data_to_send(int Block, BYTE *data) {
     header[3] = Block%256;
     for(i = 0; i<dataLength; i++)
         header[4+i] = data[i];
+    return header;
+}
+
+
+BYTE *helpers::RRQ_command(char *filename, char *mode) {
+    int file_length = strlen(filename);
+    int mode_length = strlen(mode);
+    int i;
+
+    BYTE * header = (BYTE *) calloc(2 + file_length + 1 + mode_length + 1, sizeof(BYTE));
+    header[0] = 0;
+    header[1] = 1;
+    for(i=0; i < file_length; i++){
+        header[2+i] = filename[i];
+    }
+    header[2 + file_length] = 0;
+    for(i=0; i < mode_length; i++){
+        header[2 + file_length + 1 + i] = mode[i];
+    }
+    header[2 + file_length + 1 + mode_length] = 0;
+    return header;
+}
+
+
+BYTE *helpers::ACK(int block) {
+    BYTE * header = (BYTE *) calloc( 2+2, sizeof(BYTE));
+    header[0] = 0;
+    header[1] = 4;
+
+    if(block >= 256*256){
+        printf("N de bloque no puede ser introducido en 2 bytes.\n");
+        return NULL;
+    }
+    header[2] = block/256;
+    header[3] = block%256;
+
     return header;
 }
