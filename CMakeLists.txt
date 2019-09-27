@@ -19,16 +19,16 @@ target_link_libraries(TFTP_PG_CLIENT libs)
 
 install(TARGETS TFTP_PG_SERVER
         COMPONENT linapp
-        RUNTIME DESTINATION "/home/TFTP_PG/server/"
-        LIBRARY DESTINATION "/home/TFTP_PG/server/"
-        DESTINATION "/home/TFTP_PG/server/"
+        RUNTIME DESTINATION "$ENV{HOME}/TFTP_PG/server/"
+        LIBRARY DESTINATION "$ENV{HOME}/TFTP_PG/server/"
+        DESTINATION "$ENV{HOME}/TFTP_PG/server/"
         )
 
 install(TARGETS TFTP_PG_CLIENT
         COMPONENT linapp
-        RUNTIME DESTINATION "/home/TFTP_PG/client/"
-        LIBRARY DESTINATION "/home/TFTP_PG/client/"
-        DESTINATION "home/TFTP_PG/client/"
+        RUNTIME DESTINATION "$ENV{HOME}/TFTP_PG/client/"
+        LIBRARY DESTINATION "$ENV{HOME}/TFTP_PG/client/"
+        DESTINATION "$ENV{HOME}/TFTP_PG/client/"
         )
 
 SET(MAJOR_VERSION 1)
