@@ -110,6 +110,7 @@ int helpers::get_packet_type(BYTE *buffer) {
         return -1;
     }
     int packetType = buffer[0]*256+buffer[1];
+    printf("PacketType: %d\n", packetType);
     return packetType;
 }
 

@@ -32,12 +32,13 @@ void client::init(int argc, char **argv) {
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = PORT;
     my_addr.sin_addr.s_addr = INADDR_ANY;
+    /*
     if (bind(sock_client, (const struct sockaddr *) &my_addr, sizeof(struct sockaddr_in)) == -1) {
         perror(argv[0]);
         fprintf(stderr, "%s: unable to bind socket\n", argv[0]);
         exit(1);
     }
-
+    */
 
 
     addrlen = sizeof(struct sockaddr_in);
