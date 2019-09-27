@@ -249,15 +249,12 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
 
     buffer = reinterpret_cast<char *>(helpers::RRQ_command(filename, mode));
 
-    printf("Solicitando %s\n",filename);
     sendto (socket, buffer, 2+strlen(filename)+1+strlen(mode)+1,0, (struct sockaddr *)&clientaddr_in, addrlen);
 
     while (end != 2){
         packet_number++;
 
         bytes_read = recvfrom (socket, data_file, PACKET_SIZE+4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
-
-        printf("Recibiendo %d bytes - option %d - block %d\n",bytes_read,helpers::get_packet_type(reinterpret_cast<BYTE *>(data_file)),helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)));
 
         if(bytes_read == -1){
             printf("Error receiving data\n");
@@ -287,7 +284,6 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
         fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_read-4), bytes_read-4, 1, file);
 
         buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
-        printf("Enviando ACK request\n");
         sendto (socket, buffer, 4,0, (struct sockaddr *)&clientaddr_in, addrlen);
         if (bytes_read-4 < PACKET_SIZE) end = 2;
     }

@@ -25,11 +25,6 @@
 class server {
 
 public:
-    int socket_server, request;
-    struct sockaddr_in server_addr, client_addr;
-    fd_set read_mask;
-    char buffer[BUFFER_SIZE];
-    socklen_t addrlen;
 
     server();
 
@@ -44,9 +39,12 @@ private:
     /*
      * Declared variables
      */
-    int conexion_cliente, puerto;
-    
+    int socket_server, conexion_cliente, puerto, request;
+    socklen_t longc;
+    struct sockaddr_in servidor, cliente;
+    char buffer[BUFFER_SIZE];
     Header *header;
+    fd_set read_mask;
     
 
 };
