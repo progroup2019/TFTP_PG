@@ -1,10 +1,8 @@
 
 
-
-
 #ifndef TFTP_PG_SERVER_H
 #define TFTP_PG_SERVER_H
-#define  MAX_CLIENTS_CONNECTION 128
+#define MAX_CLIENTS_CONNECTION 128
 #define BUFFER_SIZE	1024
 #define PORT 6969
 
@@ -20,18 +18,21 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+#define BUFFER_SIZE	1024
+#define PORT 6969
+#define PACKET_SIZE 512
+
 class server {
 
 public:
+
     server();
 
     void init();
 
-    void get_command(char *buffer);
+    void server_received_file(char *filename);
 
-    void server_received_file(char *buffer);
-
-    void server_send_file(char *buffer);
+    void server_send_file(char * filename);
 
 private:
 
@@ -44,6 +45,7 @@ private:
     char buffer[BUFFER_SIZE];
     Header *header;
     fd_set read_mask;
+    
 
 };
 

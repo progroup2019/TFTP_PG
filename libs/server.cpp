@@ -36,7 +36,6 @@ void server::init() {
             if (request == -1){
                 printf("Error receiving\n");
                 return;
-                exit(1);
             }
 
             buffer[request] = '\0';
@@ -61,14 +60,84 @@ void server::init() {
             } else if (type_option == 1){
                 filename = helpers::get_filename(reinterpret_cast<BYTE *>(buffer));
                 server_send_file(filename);
+            } else {
+                helpers::ACK_ERROR(socket_server,cliente,0,"Command invalid");
             }
         }
-        break;
     }
+
+    close(socket_server);
 }
 
 
 void server::server_received_file(char* filename){
+    printf("Start receiving file %s\n", filename);
+    int packet_number= 0, end= 0;
+    int bytes_received,type_option;
+    char * buffer;
+    char data_file[PACKET_SIZE+4];
+
+    FILE *file;
+
+    socklen_t addrlen;
+    addrlen = sizeof(struct sockaddr_in);
+
+    file = fopen(filename,"rb");
+
+    if (file != NULL){
+        helpers::ACK_ERROR(socket_server,cliente,1, "File exists");
+        fclose(file);
+        printf("File %s exists\n",filename);
+        return;
+    }
+    file = fopen(filename,"wb");
+    buffer = reinterpret_cast<char *>(helpers::ACK(0));
+
+    sendto(socket_server,buffer,4,0, (struct sockaddr *)&cliente, addrlen);
+
+    while (end!=2){
+        packet_number++;
+
+        bytes_received = recvfrom(socket_server,data_file,PACKET_SIZE+4,0,(struct sockaddr *)&cliente, &addrlen);
+
+        if(bytes_received == -1){
+            printf("Error receiving data\n");
+            helpers::ACK_ERROR(socket_server,cliente,0,"Error receiving data");
+            fclose(file);
+            return;
+        }
+
+        type_option = helpers::get_packet_type(reinterpret_cast<BYTE *>(data_file));
+
+        if(type_option == 5){
+            fclose(file);
+            perror(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_received));
+            return;
+        }
+
+        if (type_option != 3){
+            printf("Packet type invalid");
+            helpers::ACK_ERROR(socket_server,cliente,4,"Invalid packet");
+            fclose(file);
+            return;
+        }
+
+        if (helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)) != packet_number){
+            printf("Bloque incorrecton");
+            helpers::ACK_ERROR(socket_server,cliente,4,"Invalid packet");
+            fclose(file);
+            return;
+        }
+
+        fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_received-4), bytes_received-4, 1, file);
+
+        buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
+        sendto (socket_server, buffer, 4,0, (struct sockaddr *)&cliente, addrlen);
+        if (bytes_received-4 < PACKET_SIZE) end = 2;
+    }
+
+    fclose(file);
+    return;
 }
 
 
@@ -94,7 +163,7 @@ void server::server_send_file(char *filename) {
 
     if (file == NULL){
         printf("File %s no found\n",filename);
-        helpers::ACK_ERROR(socket_server,cliente,1, "File no Found");
+        helpers::ACK_ERROR(socket_server,cliente,6, "File no Found");
         return;
     }
 
@@ -137,12 +206,10 @@ void server::server_send_file(char *filename) {
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
                                                                             reinterpret_cast<BYTE *>(last_data_file)));
         }
-        printf("Enviando %d bytes de bloque %d / %d \n",data_to_send,packet_number,num_packets);
         sendto (socket_server, buffer, 4+data_to_send,0, (struct sockaddr *)&cliente, addrlen);
 
         byte_received = recvfrom (socket_server, command, 4,0,(struct sockaddr *)&cliente, &addrlen);
 
-        printf("recibiendo %d bytes - opcion %d\n",byte_received,helpers::get_packet_type(reinterpret_cast<BYTE *>(command)));
 
         if(byte_received == -1){
             printf("Error receiving data\n");
