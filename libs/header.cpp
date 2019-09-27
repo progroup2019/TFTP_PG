@@ -59,6 +59,7 @@ char* Header::make_data_pack(int block, char *data){
 	return packet;
 }
 
+/*
 // makes ACK packet
 char* Header::make_ack(char* block){
 	char *packet;
@@ -68,6 +69,7 @@ char* Header::make_ack(char* block){
 	strcat(packet, block);
 	return packet;
 }
+*/
 
 // makes ERR packet
 char* Header::make_err(char *error_code, char* error_message){

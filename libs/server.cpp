@@ -63,10 +63,10 @@ void server::init() {
             //Verify that filename command is correct
             if(type_option == 1){
                 filename = helpers::get_filename((BYTE *) buffer);
-                server_received_file(filename);
-                printf("%s\n", filename);
+                printf("Iniciando petición de escritura del archivo: %s\n", filename);
+                server_received_file(filename);           
             }else{
-                perror("Error in command to get filename.");
+                perror("Ilegal operation.");
             }
 
         }
@@ -76,6 +76,40 @@ void server::init() {
 
 
 void server::server_received_file(char* filename){
+    int packedtNumber = 0;
+    int request;
+
+    char *packet;
+    char filePiece[PACKET_SIZE + 4];
+    
+    FILE *file;
+
+    char fileRoute[25] = "server_files/";
+    strcat(fileRoute, filename);
+
+    file = fopen(fileRoute, "rb");
+    if(file != NULL){
+        fclose(file);
+        perror("Error: File already exists");
+        return;
+    }
+
+    file = fopen(fileRoute, "wb");
+    packet = (char *) helpers::make_ACK(0) ;
+
+	for(int i=0; i<4; i++)
+		printf(" %d ", packet[i]);
+	printf("\n");
+    printf("socket; %d \n", socket_server);
+    int x =sendto(socket_server, packet , 4, 0, (struct sockaddr *)&client_addr, addrlen);
+    printf("x = %d\n", x);
+    if( x == -1)
+    {
+        perror("ACK ERROR");
+    }
+    fclose(file);
+
+
 }
 
 

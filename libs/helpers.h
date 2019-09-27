@@ -21,6 +21,8 @@ public:
     static BYTE * WRQ_command(char* filename, char* mode);
 
     static BYTE * prepare_data_to_send(int Block,BYTE * data);
+
+    static BYTE * make_ACK(int nBloque);
 };
 
 

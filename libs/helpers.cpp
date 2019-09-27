@@ -206,3 +206,27 @@ BYTE *helpers::prepare_data_to_send(int Block, BYTE *data) {
         header[4+i] = data[i];
     return header;
 }
+
+BYTE *helpers::make_ACK(int nBlock){
+
+	BYTE * header = (BYTE *) calloc( 2+2, sizeof(BYTE));
+
+// msg type
+	header[0] = 0;
+	header[1] = 4;
+
+//nBloque
+	if(nBlock >= 256*256){
+		printf("N of block cant be fixed in 2 bytes.\n");
+		return NULL;
+	}
+	header[2] = nBlock/256;
+	header[3] = nBlock%256;
+
+
+	for(int i=0; i<4; i++)
+		printf(" %d ", header[i]);
+	printf("\n");
+
+	return header;
+}
