@@ -110,7 +110,6 @@ int helpers::get_packet_type(BYTE *buffer) {
         return -1;
     }
     int packetType = buffer[0]*256+buffer[1];
-    printf("PacketType: %d\n", packetType);
     return packetType;
 }
 
@@ -147,16 +146,17 @@ int helpers::get_packet_number(unsigned char *packet) {
 }
 
 
-char *helpers::get_data(char *buffer, int data_size) {
+char *helpers::get_data(BYTE *buffer, int data_size) {
     if(buffer == NULL)
     {
-        printf("Error al obtener el paquete: Paquete nulo.\n");
+        printf("Packet null.\n");
         return NULL;
     }
 
-    char * data = (char *) malloc((data_size+1)* sizeof(char));
+    char * data = (char *) malloc((data_size)* sizeof(char));
 
     memcpy(data, buffer+4, data_size);
+
 
     return data;
 }
@@ -170,7 +170,7 @@ BYTE * helpers::WRQ_command(char *filename, char *mode) {
     BYTE * header = (BYTE *) calloc(2 + file_length + 1 + mode_length + 1, sizeof(BYTE));
 
     header[0] = 0;
-    header[1] = 1;
+    header[1] = 2;
 
     for(i=0; i < file_length; i++){
         header[2+i] = filename[i];
@@ -207,26 +207,69 @@ BYTE *helpers::prepare_data_to_send(int Block, BYTE *data) {
     return header;
 }
 
-BYTE *helpers::make_ACK(int nBlock){
 
-	BYTE * header = (BYTE *) calloc( 2+2, sizeof(BYTE));
+BYTE *helpers::RRQ_command(char *filename, char *mode) {
+    int file_length = strlen(filename);
+    int mode_length = strlen(mode);
+    int i;
 
-// msg type
-	header[0] = 0;
-	header[1] = 4;
+    BYTE * header = (BYTE *) calloc(2 + file_length + 1 + mode_length + 1, sizeof(BYTE));
+    header[0] = 0;
+    header[1] = 1;
+    for(i=0; i < file_length; i++){
+        header[2+i] = filename[i];
+    }
+    header[2 + file_length] = 0;
+    for(i=0; i < mode_length; i++){
+        header[2 + file_length + 1 + i] = mode[i];
+    }
+    header[2 + file_length + 1 + mode_length] = 0;
+    return header;
+}
 
-//nBloque
-	if(nBlock >= 256*256){
-		printf("N of block cant be fixed in 2 bytes.\n");
-		return NULL;
-	}
-	header[2] = nBlock/256;
-	header[3] = nBlock%256;
+
+BYTE *helpers::ACK(int block) {
+    BYTE * header = (BYTE *) calloc( 2+2, sizeof(BYTE));
+    header[0] = 0;
+    header[1] = 4;
+
+    if(block >= 256*256){
+        printf("N de bloque no puede ser introducido en 2 bytes.\n");
+        return NULL;
+    }
+    header[2] = block/256;
+    header[3] = block%256;
+
+    return header;
+}
 
 
-	for(int i=0; i<4; i++)
-		printf(" %d ", header[i]);
-	printf("\n");
+void helpers::ACK_ERROR(int socket, struct sockaddr_in clientaddr_in, int code_error, char *err_msg) {
+    socklen_t addrlen;
+    int resp;
 
-	return header;
+    addrlen = sizeof(struct sockaddr_in);
+
+    int errMsgLength = strlen(err_msg);
+    int i;
+
+    BYTE * header = (BYTE *) calloc( 2+2+errMsgLength+1, sizeof(BYTE));
+    header[0] = 0;
+    header[1] = 5;
+    header[2] = code_error/256;
+    header[3] = code_error%256;
+    for(i = 0; i<errMsgLength; i++)
+        header[4+i] = err_msg[i];
+
+    header[4+errMsgLength] = 0;
+
+    resp = sendto(socket,header,PACKET_SIZE,0,(struct sockaddr *)&clientaddr_in, addrlen);
+
+    if ( resp == -1) {
+        perror("ERROR send ACK\n");
+        return;
+    }
+
+    return;
+
 }

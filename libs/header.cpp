@@ -65,7 +65,7 @@ char* Header::make_ack(char* block){
 	char *packet;
 	packet = (char *)malloc(2+strlen(block));
 	memset(packet, 0, sizeof packet);
-	strcat(packet, ACK); //option code
+	strcat(packet, "04"); //option code
 	strcat(packet, block);
 	return packet;
 }

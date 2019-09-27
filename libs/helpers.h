@@ -16,13 +16,17 @@ public:
 
     static int get_packet_number(unsigned char *packet);
 
-    static char * get_data(char* buffer,int data_size);
+    static char * get_data(BYTE* buffer,int data_size);
 
     static BYTE * WRQ_command(char* filename, char* mode);
 
     static BYTE * prepare_data_to_send(int Block,BYTE * data);
 
-    static BYTE * make_ACK(int nBloque);
+    static BYTE * RRQ_command(char* filename, char * mode);
+
+    static BYTE * ACK(int block);
+
+    static void ACK_ERROR(int socket,struct sockaddr_in clientaddr_in, int code_error, char * err_msg);
 };
 
 
