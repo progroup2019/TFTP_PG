@@ -171,3 +171,6 @@ fabric.properties
 *.app
 
 .idea
+
+TFTP_PG
+TFTP_PG_C
