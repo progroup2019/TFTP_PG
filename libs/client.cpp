@@ -68,9 +68,11 @@ void client::init(int argc, char **argv) {
 
     BYTE *msg;
 
-    if (strcmp(argv[2], "POST"))
+    if (strcmp(argv[2], "POST") == 0)
     {
         send_file(sock_client,argv[3],"octec",serv_addr);
+    } else if (strcmp(argv[2], "GET") == 0) {
+        receiving_file(sock_client,argv[3],"octec",serv_addr);
     }
 
 }
@@ -147,7 +149,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
     while(end!=2){
         packet_number++;
         if(packet_number<=num_packets){
-            fread(data_file, 512,1,file);
+            fread(data_file, PACKET_SIZE,1,file);
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
                                                                             reinterpret_cast<BYTE *>(data_file)));
         } else{
@@ -246,21 +248,26 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
 
     buffer = reinterpret_cast<char *>(helpers::RRQ_command(filename, mode));
 
+    printf("Solicitando %s\n",filename);
     sendto (socket, buffer, 2+strlen(filename)+1+strlen(mode)+1,0, (struct sockaddr *)&clientaddr_in, addrlen);
 
     while (end != 2){
         packet_number++;
 
         bytes_read = recvfrom (socket, data_file, PACKET_SIZE+4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
+
+        printf("Recibiendo %d bytes - option %d - block %d\n",bytes_read,helpers::get_packet_type(reinterpret_cast<BYTE *>(data_file)),helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)));
+
         if(bytes_read == -1){
             printf("Error receiving data\n");
+            return;
         }
 
         type_option = helpers::get_packet_type(reinterpret_cast<BYTE *>(data_file));
 
         if(type_option == 5){
             fclose(file);
-            perror(data_file);
+            perror(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_read));
             return;
         }
 
@@ -276,9 +283,10 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
             return;
         }
 
-        fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_read + 4), bytes_read + 4, 1, file);
+        fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_read-4), bytes_read-4, 1, file);
 
         buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
+        printf("Enviando ACK request\n");
         sendto (socket, buffer, 4,0, (struct sockaddr *)&clientaddr_in, addrlen);
         if (bytes_read-4 < PACKET_SIZE) end = 2;
     }

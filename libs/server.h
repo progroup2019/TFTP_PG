@@ -25,9 +25,9 @@ public:
 
     void init();
 
-    void get_command(char *buffer);
+    void server_received_file(char *filename);
 
-    void server_received_file(char *buffer);
+    void server_send_file(char * filename);
 
 private:
 

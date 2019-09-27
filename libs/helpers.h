@@ -25,6 +25,8 @@ public:
     static BYTE * RRQ_command(char* filename, char * mode);
 
     static BYTE * ACK(int block);
+
+    static void ACK_ERROR(int socket,struct sockaddr_in clientaddr_in, int code_error, char * err_msg);
 };
 
 

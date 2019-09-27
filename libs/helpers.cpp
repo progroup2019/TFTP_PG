@@ -153,9 +153,10 @@ char *helpers::get_data(BYTE *buffer, int data_size) {
         return NULL;
     }
 
-    char * data = (char *) malloc((data_size+1)* sizeof(char));
+    char * data = (char *) malloc((data_size)* sizeof(char));
 
     memcpy(data, buffer+4, data_size);
+
 
     return data;
 }
@@ -240,4 +241,35 @@ BYTE *helpers::ACK(int block) {
     header[3] = block%256;
 
     return header;
+}
+
+
+void helpers::ACK_ERROR(int socket, struct sockaddr_in clientaddr_in, int code_error, char *err_msg) {
+    socklen_t addrlen;
+    int resp;
+
+    addrlen = sizeof(struct sockaddr_in);
+
+    int errMsgLength = strlen(err_msg);
+    int i;
+
+    BYTE * header = (BYTE *) calloc( 2+2+errMsgLength+1, sizeof(BYTE));
+    header[0] = 0;
+    header[1] = 5;
+    header[2] = code_error/256;
+    header[3] = code_error%256;
+    for(i = 0; i<errMsgLength; i++)
+        header[4+i] = err_msg[i];
+
+    header[4+errMsgLength] = 0;
+
+    resp = sendto(socket,header,PACKET_SIZE,0,(struct sockaddr *)&clientaddr_in, addrlen);
+
+    if ( resp == -1) {
+        perror("ERROR send ACK\n");
+        return;
+    }
+
+    return;
+
 }

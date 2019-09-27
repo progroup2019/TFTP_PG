@@ -1,7 +1,6 @@
 #define RRQ "01" //Code for read request
 #define WRQ "02" //Code for write
 #define PCKT "03" //Code for data
-#define ACK "04" //Code for acknoledge
 #define ERR "05" //Code for error
 
 class Header{
