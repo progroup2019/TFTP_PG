@@ -54,7 +54,7 @@ void client::init(int argc, char **argv) {
     hints.ai_family = AF_INET;
 
     if (getaddrinfo (argv[1], NULL, &hints, &res) != 0){
-        fprintf(stderr, "%s: No es posible resolver la IP de %s\n",
+        fprintf(stderr, "%s: Does'nt possible resolving IP %s\n",
                 argv[0], argv[1]);
         exit(1);
     }
@@ -80,6 +80,7 @@ void client::init(int argc, char **argv) {
 
 void client::send_file(int socket, char *filename, char *mode, struct sockaddr_in clientaddr_in) {
 
+    printf("Sending file %s \n",filename);
     int packet_number= 0, end= 0;
 
     int bytes_received, type_option;
@@ -100,7 +101,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
 
     file = fopen(filename,"rb");
     if(file==NULL){
-        printf("No se ha encontrado el fichero %s\n", filename);
+        printf("File does not exist %s\n", filename);
         return;
     }
 
@@ -112,7 +113,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
     bytes_received = recvfrom(socket,command,4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
 
     if(bytes_received == -1){
-        printf("Error al recibir un mensaje\n");
+        printf("Error receiving message\n");
     }
 
     type_option = helpers::get_packet_type(reinterpret_cast<BYTE *>(command));
@@ -122,13 +123,13 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
         fclose(file);
     }
     if(type_option != 4){
-        printf("Se esperaba ack\n");
+        printf("We have waiting for ACK\n");
         fclose(file);
         return;
     }
 
     if(helpers::get_packet_number(reinterpret_cast<unsigned char *>(command)) != packet_number){
-        printf("Bloque incorrecton");
+        printf("Incorrect block\n");
         fclose(file);
         return;
     }
@@ -142,7 +143,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
     mod_packets ? last_data_file = static_cast<char *>(calloc(mod_packets, sizeof(char))): last_data_file = static_cast<char *>(calloc(
             1, sizeof(char)));
     if (data_file == NULL || last_data_file == NULL){
-        printf("Error e lectura de archivo\n");
+        printf("Error reading file\n");
         fclose (file);
         return;
     }
@@ -165,13 +166,16 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
                                                                             reinterpret_cast<BYTE *>(last_data_file)));
         }
-
+        printf("Sending packet %d \n",packet_number);
         sendto(socket,buffer,4+data_to_send,0, (struct sockaddr *)&clientaddr_in, addrlen);
 
         bytes_received = recvfrom (socket, command, 4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
 
+
+        printf("Receiving ACK\n");
+
         if(bytes_received == -1){
-            printf("%s","Error receiving ack");
+            printf("%s","Error receiving ACK");
             fclose(file);
             free(data_file);
             free(last_data_file);
@@ -187,15 +191,14 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
             free(last_data_file);
         }
         if(type_option != 4){
-            printf("Se esperaba ack\n");
+            printf("We have waiting ACK\n");
             fclose(file);
             free(data_file);
             free(last_data_file);
             return;
         }
-
         if(helpers::get_packet_number(reinterpret_cast<unsigned char *>(command)) != packet_number){
-            printf("Bloque incorrecto");
+            printf("Incorrect block %d\n",helpers::get_packet_number(reinterpret_cast<unsigned char *>(command)));
             fclose(file);
             free(data_file);
             free(last_data_file);
@@ -206,7 +209,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
     }
 
 
-    printf(" success send file\n");
+    printf("Success send file\n");
 
     fclose (file);
     free(data_file);
@@ -218,7 +221,7 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
 void client::receiving_file(int socket, char *filename, char *mode, struct sockaddr_in clientaddr_in) {
     int packet_number= 0, end= 0;
     int bytes_read, type_option;
-
+    printf("Receiving file :%s\n",filename);
     char *buffer;
 
     char data_file[PACKET_SIZE+4];
@@ -248,7 +251,7 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
     file =fopen(filename,"wb");
 
     buffer = reinterpret_cast<char *>(helpers::RRQ_command(filename, mode));
-
+    printf("Sending RRQ request");
     sendto (socket, buffer, 2+strlen(filename)+1+strlen(mode)+1,0, (struct sockaddr *)&clientaddr_in, addrlen);
 
     while (end != 2){
@@ -270,13 +273,13 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
         }
 
         if (type_option != 3){
-            printf("Packet type invalid");
+            printf("Invalid Packet type\n");
             fclose(file);
             return;
         }
 
         if (helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)) != packet_number){
-            printf("Bloque incorrecton");
+            printf("Incorrect block %d\n",helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)));
             fclose(file);
             return;
         }
@@ -284,11 +287,13 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
         fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_read-4), bytes_read-4, 1, file);
 
         buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
+        printf("Receive 04 with block number %d\n",helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)));
         sendto (socket, buffer, 4,0, (struct sockaddr *)&clientaddr_in, addrlen);
         if (bytes_read-4 < PACKET_SIZE) end = 2;
     }
 
     fclose(file);
+    printf("Success received file\n");
 
     return;
 }

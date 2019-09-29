@@ -93,12 +93,16 @@ void server::server_received_file(char* filename){
     file = fopen(filename,"wb");
     buffer = reinterpret_cast<char *>(helpers::ACK(0));
 
+    printf("Sending ACK 0401 \n");
     sendto(socket_server,buffer,4,0, (struct sockaddr *)&cliente, addrlen);
 
     while (end!=2){
         packet_number++;
 
         bytes_received = recvfrom(socket_server,data_file,PACKET_SIZE+4,0,(struct sockaddr *)&cliente, &addrlen);
+
+
+        printf("%d bytes received  of packet:%d \n",bytes_received,packet_number);
 
         if(bytes_received == -1){
             printf("Error receiving data\n");
@@ -132,16 +136,19 @@ void server::server_received_file(char* filename){
         fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_received-4), bytes_received-4, 1, file);
 
         buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
+        printf("Sending ACK for block number %d\n",helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)));
         sendto (socket_server, buffer, 4,0, (struct sockaddr *)&cliente, addrlen);
         if (bytes_received-4 < PACKET_SIZE) end = 2;
     }
 
     fclose(file);
+    printf("File received \n");
     return;
 }
 
 
 void server::server_send_file(char *filename) {
+    printf("Init send file %s \n",filename);
     int packet_number = 0, end = 0;
     int byte_received, data_to_send = PACKET_SIZE;
     char * data_file;
@@ -206,10 +213,13 @@ void server::server_send_file(char *filename) {
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
                                                                             reinterpret_cast<BYTE *>(last_data_file)));
         }
+        printf("Sending block number %d\n",packet_number);
         sendto (socket_server, buffer, 4+data_to_send,0, (struct sockaddr *)&cliente, addrlen);
 
         byte_received = recvfrom (socket_server, command, 4,0,(struct sockaddr *)&cliente, &addrlen);
 
+
+        printf("Receiving ack\n");
 
         if(byte_received == -1){
             printf("Error receiving data\n");
@@ -236,7 +246,7 @@ void server::server_send_file(char *filename) {
         }
 
         if (helpers::get_packet_number(reinterpret_cast<unsigned char *>(command)) != packet_number){
-            printf("Bloque incorrecton");
+            printf("Incorrect block %d\n",helpers::get_packet_number(reinterpret_cast<unsigned char *>(command)));
             helpers::ACK_ERROR(socket_server,cliente,4, "Block invalid");
             fclose(file);
             free(data_file);
@@ -247,4 +257,5 @@ void server::server_send_file(char *filename) {
         if (end == 1) end =2;
     }
 
+    printf("File sent success\n");
 }
