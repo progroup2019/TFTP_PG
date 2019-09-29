@@ -1,0 +1,9 @@
+Package: tftp_pg
+Version: 1.0.0
+Section: devel
+Priority: optional
+Architecture: amd64
+Installed-Size: 2150
+Maintainer: KK
+Description: Project TFTP Protocol builded by https://github.com/progroup2019
+

@@ -152,8 +152,16 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
         packet_number++;
         if(packet_number<=num_packets){
             fread(data_file, PACKET_SIZE,1,file);
+            /*for(int i = 0; i <= strlen(data_file); i++)
+            {
+                if(data_file[i] == 00)  
+                {
+                    data_file[i] = 32;
+                }
+            }*/
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
-                                                                            reinterpret_cast<BYTE *>(data_file)));
+                                                                    reinterpret_cast<BYTE *>(data_file)));
+            printf("Data: %s\n",data_file );
         } else{
             end=1;
             if (mod_packets){

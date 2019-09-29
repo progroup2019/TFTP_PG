@@ -132,8 +132,15 @@ void server::server_received_file(char* filename){
             fclose(file);
             return;
         }
-
-        fwrite(helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_received-4), bytes_received-4, 1, file);
+        char *data_to_write = helpers::get_data(reinterpret_cast<BYTE *>(data_file), bytes_received-4);
+        /*for(int i = 0; i <= strlen(data_to_write); i++)
+            {
+                if(data_to_write[i] == 32)  
+                {
+                    data_to_write[i] = 00;
+                }
+            }*/
+        fwrite(data_to_write, 1, bytes_received-4, file);
 
         buffer = reinterpret_cast<char *>(helpers::ACK(packet_number));
         printf("Sending ACK for block number %d\n",helpers::get_packet_number(reinterpret_cast<unsigned char *>(data_file)));
