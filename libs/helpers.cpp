@@ -8,11 +8,12 @@
 #include <cstring>
 #include "helpers.h"
 
-char **helpers::get_my_ipv4() {
+helpers::helpers(){};
+
+void helpers::get_my_ipv4() {
     struct ifaddrs *myaddrs, *ifa;
     void *in_addr;
     char buf[64];
-    char *ips[10];
 
     if(getifaddrs(&myaddrs) != 0)
     {
@@ -43,59 +44,26 @@ char **helpers::get_my_ipv4() {
 
         if (inet_ntop(ifa->ifa_addr->sa_family, in_addr, buf, sizeof(buf)))
         {
-            ips[i] = static_cast<char *>(malloc(sizeof(buf)));
-            strcpy(ips[i],buf);
-        }
-        i++;
-    }
-
-    freeifaddrs(myaddrs);
-    return ips;
-}
-
-char **helpers::get_my_ipv6() {
-    struct ifaddrs *myaddrs, *ifa;
-    void *in_addr;
-    char buf[64];
-    char *ips[10];
-
-    if(getifaddrs(&myaddrs) != 0)
-    {
-        perror("getifaddrs");
-        exit(1);
-    }
-
-    int i= 0;
-    for (ifa = myaddrs; ifa != NULL; ifa = ifa->ifa_next)
-    {
-        if (ifa->ifa_addr == NULL)
-            continue;
-        if (!(ifa->ifa_flags & IFF_UP))
-            continue;
-
-        switch (ifa->ifa_addr->sa_family)
-        {
-            case AF_INET6:
+            for (int j = 0; j < strlen(buf); ++j)
             {
-                struct sockaddr_in *s4 = (struct sockaddr_in *)ifa->ifa_addr;
-                in_addr = &s4->sin_addr;
-                break;
+                ips[i] += buf[j];
             }
-
-            default:
-                continue;
-        }
-
-        if (inet_ntop(ifa->ifa_addr->sa_family, in_addr, buf, sizeof(buf)))
-        {
-            ips[i] = static_cast<char *>(malloc(sizeof(buf)));
-            strcpy(ips[i],buf);
         }
         i++;
     }
 
+    printf("Opciones:\n");
+
+    for (int j = 0; j < i; ++j)
+    {
+        printf("presione %d para: %s\n",j,ips[j].c_str());
+        if (j == 9)
+        {
+            break;
+        }
+    }
+
     freeifaddrs(myaddrs);
-    return ips;
 }
 
 char *helpers::get_my_ip_public() {

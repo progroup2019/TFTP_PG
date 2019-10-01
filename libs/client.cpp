@@ -31,7 +31,7 @@ void client::init(int argc, char **argv) {
 
     my_addr.sin_family = AF_INET;
     my_addr.sin_port = PORT;
-    my_addr.sin_addr.s_addr = INADDR_ANY;
+    my_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     /*
     if (bind(sock_client, (const struct sockaddr *) &my_addr, sizeof(struct sockaddr_in)) == -1) {
         perror(argv[0]);
@@ -148,9 +148,27 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
         return;
     }
 
+    int retries = 0;
+
+    int ant = 0;
+
     while(end!=2){
-        packet_number++;
-        if(packet_number<=num_packets){
+        if (retries == 0){
+            packet_number++;
+            if (packet_number == (256*256-1))
+            {
+                ant = packet_number + ant;
+                packet_number = 0;
+            }
+
+        } else {
+            if (retries >= MAX_RETRIES){
+                printf("Maximo de intentos, trasnferencia cancelada\n");
+                return;
+            }
+        }
+
+        if((packet_number + ant)<=num_packets){
             fread(data_file, PACKET_SIZE,1,file);
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
                                                                             reinterpret_cast<BYTE *>(data_file)));
@@ -167,7 +185,13 @@ void client::send_file(int socket, char *filename, char *mode, struct sockaddr_i
                                                                             reinterpret_cast<BYTE *>(last_data_file)));
         }
         printf("Sending packet %d \n",packet_number);
-        sendto(socket,buffer,4+data_to_send,0, (struct sockaddr *)&clientaddr_in, addrlen);
+        if ((sendto(socket,buffer,4+data_to_send,0, (struct sockaddr *)&clientaddr_in, addrlen)) == -1){
+            retries++;
+            printf("retrie %d\n",retries);
+            continue;
+        }
+
+        retries = 0;
 
         bytes_received = recvfrom (socket, command, 4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
 
@@ -254,8 +278,15 @@ void client::receiving_file(int socket, char *filename, char *mode, struct socka
     printf("Sending RRQ request");
     sendto (socket, buffer, 2+strlen(filename)+1+strlen(mode)+1,0, (struct sockaddr *)&clientaddr_in, addrlen);
 
+    int ant = 0;
     while (end != 2){
         packet_number++;
+
+        if (packet_number == (256*256-1))
+        {
+            ant = packet_number + ant;
+            packet_number = 0;
+        }
 
         bytes_read = recvfrom (socket, data_file, PACKET_SIZE+4,0,(struct sockaddr *)&clientaddr_in, &addrlen);
 

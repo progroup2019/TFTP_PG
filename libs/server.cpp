@@ -3,13 +3,20 @@
 #include <fstream>
 #include "server.h"
 #include "helpers.h"
+#include <iostream>
 server::server() {
     memset ((char *)&servidor, 0, sizeof(struct sockaddr_in));
     memset ((char *)&cliente, 0, sizeof(struct sockaddr_in));
     longc = sizeof(struct sockaddr_in);
 
+
+    printf("Seleccione una IP para selecionar servidor\n");
+    helpers *h = new helpers();
+    h->get_my_ipv4();
+    int optip;
+    std::cin>>optip;
     servidor.sin_family = AF_INET;
-    servidor.sin_addr.s_addr = INADDR_ANY;
+    servidor.sin_addr.s_addr = inet_addr(h->ips[optip].c_str());
     servidor.sin_port = htons(PORT);
     socket_server = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -18,10 +25,24 @@ server::server() {
 void server::init() {
     if(bind(socket_server, (struct sockaddr *)&servidor, sizeof(struct sockaddr_in)) < 0)
     {
-        printf("Unable to bind address server\n");
+        printf("Unable to bind address server, run serve in mode super admin \n");
         close(socket_server);
         return;
     }
+
+    struct sockaddr_in my_addr;
+    char myIP[16];
+    unsigned int myPort;
+    bzero(&my_addr, sizeof(my_addr));
+    socklen_t len = sizeof(my_addr);
+
+    getsockname(socket_server, (struct sockaddr *) &my_addr, &len);
+    inet_ntop(AF_INET, &my_addr.sin_addr, myIP, sizeof(myIP));
+    myPort = ntohs(my_addr.sin_port);
+
+    printf("Local ip address: %s\n", myIP);
+    printf("Local port : %u\n", myPort);
+
 
 
     FD_ZERO(&read_mask);
@@ -30,40 +51,50 @@ void server::init() {
     int type_option = -1;
     char* filename;
     while (1){
-        if (FD_ISSET(socket_server, &read_mask)) {
-            request = recvfrom(socket_server, buffer, BUFFER_SIZE - 1, 0, (struct sockaddr *)&cliente, &longc);
+        printf("Esperando cliente\n");
+        if(select(socket_server+1, &read_mask, (fd_set *)0, (fd_set *)0, NULL))
+        {
+            if (FD_ISSET(socket_server, &read_mask)) {
+                printf("Cliente conectado\n");
+                request = recvfrom(socket_server, buffer, BUFFER_SIZE - 1, 0, (struct sockaddr *)&cliente, &longc);
 
-            if (request == -1){
-                printf("Error receiving\n");
-                return;
+                if (request == -1){
+                    printf("Error receiving\n");
+                    return;
+                }
+
+                buffer[request] = '\0';
+
+
+                char hostname[MAX_CLIENTS_CONNECTION];
+
+                longc = sizeof(struct sockaddr_in);
+
+                if(getnameinfo((struct sockaddr *)&cliente,sizeof(cliente),hostname,MAX_CLIENTS_CONNECTION,NULL,0,0)){
+                    if (inet_ntop(AF_INET, &(cliente.sin_addr), hostname, MAX_CLIENTS_CONNECTION) == NULL)
+                        perror(" inet_ntop \n");
+                }
+
+
+                type_option = helpers::get_packet_type(reinterpret_cast<BYTE *>(buffer));
+
+
+                if(type_option == 2){
+                    filename = helpers::get_filename(reinterpret_cast<BYTE *>(buffer));
+                    server_received_file(filename);
+                } else if (type_option == 1){
+                    filename = helpers::get_filename(reinterpret_cast<BYTE *>(buffer));
+                    server_send_file(filename);
+                } else {
+                    helpers::ACK_ERROR(socket_server,cliente,0,"Command invalid");
+                }
             }
-
-            buffer[request] = '\0';
-
-
-            char hostname[MAX_CLIENTS_CONNECTION];
-
-            longc = sizeof(struct sockaddr_in);
-
-            if(getnameinfo((struct sockaddr *)&cliente,sizeof(cliente),hostname,MAX_CLIENTS_CONNECTION,NULL,0,0)){
-                if (inet_ntop(AF_INET, &(cliente.sin_addr), hostname, MAX_CLIENTS_CONNECTION) == NULL)
-                    perror(" inet_ntop \n");
-            }
-
-
-            type_option = helpers::get_packet_type(reinterpret_cast<BYTE *>(buffer));
-
-
-            if(type_option == 2){
-                filename = helpers::get_filename(reinterpret_cast<BYTE *>(buffer));
-                server_received_file(filename);
-            } else if (type_option == 1){
-                filename = helpers::get_filename(reinterpret_cast<BYTE *>(buffer));
-                server_send_file(filename);
-            } else {
-                helpers::ACK_ERROR(socket_server,cliente,0,"Command invalid");
-            }
+        }else{
+            printf("End server\n");
+            close(socket_server);
+            exit(1);            
         }
+        printf("trasnferencia finalizada\n");
     }
 
     close(socket_server);
@@ -96,8 +127,14 @@ void server::server_received_file(char* filename){
     printf("Sending ACK 0401 \n");
     sendto(socket_server,buffer,4,0, (struct sockaddr *)&cliente, addrlen);
 
+    int ant = 0;
     while (end!=2){
         packet_number++;
+        if (packet_number == (256*256-1))
+        {
+            ant = packet_number + ant;
+            packet_number = 0;
+        }
 
         bytes_received = recvfrom(socket_server,data_file,PACKET_SIZE+4,0,(struct sockaddr *)&cliente, &addrlen);
 
@@ -195,9 +232,27 @@ void server::server_send_file(char *filename) {
         return;
     }
 
+    int retries = 0;
+
+
+    int ant = 0;
+
     while (end != 2){
-        packet_number++;
-        if(packet_number<=num_packets){
+        if (retries == 0){
+            packet_number++;
+            if (packet_number == (256*256-1))
+            {
+                ant = packet_number + ant;
+                packet_number = 0;
+            }
+        } else {
+            if (retries >= MAX_RETRIES){
+                printf("Maximo de intentos, trasnferencia cancelada\n");
+                return;
+            }
+                
+        }
+        if((packet_number+ant)<=num_packets){
             fread(data_file, PACKET_SIZE,1,file);
             buffer = reinterpret_cast<char *>(helpers::prepare_data_to_send(packet_number,
                                                                             reinterpret_cast<BYTE *>(data_file)));
@@ -214,7 +269,14 @@ void server::server_send_file(char *filename) {
                                                                             reinterpret_cast<BYTE *>(last_data_file)));
         }
         printf("Sending block number %d\n",packet_number);
-        sendto (socket_server, buffer, 4+data_to_send,0, (struct sockaddr *)&cliente, addrlen);
+        if ((sendto (socket_server, buffer, 4+data_to_send,0, (struct sockaddr *)&cliente, addrlen)) == -1){
+            retries++;
+            printf("retrie %d\n",retries);
+            continue;
+        }
+
+        retries = 0;
+
 
         byte_received = recvfrom (socket_server, command, 4,0,(struct sockaddr *)&cliente, &addrlen);
 

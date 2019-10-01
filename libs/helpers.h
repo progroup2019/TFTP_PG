@@ -1,12 +1,17 @@
 #ifndef TFTP_PG_HELPERS_H
 #define TFTP_PG_HELPERS_H
 #define PACKET_SIZE 512
+
+
+#include <string>
 typedef unsigned char BYTE;
 
 class helpers {
 public:
     helpers();
-    static char ** get_my_ipv4();
+
+    std::string ips[10];
+    void get_my_ipv4();
     char ** get_my_ipv6();
     char * get_my_ip_public();
 

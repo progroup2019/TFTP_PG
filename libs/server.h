@@ -4,7 +4,8 @@
 #define TFTP_PG_SERVER_H
 #define MAX_CLIENTS_CONNECTION 128
 #define BUFFER_SIZE	1024
-#define PORT 6969
+#define PORT 69
+#define MAX_RETRIES 10
 
 #include "header.h"
 #include <stdio.h>
@@ -19,7 +20,6 @@
 #include <netdb.h>
 
 #define BUFFER_SIZE	1024
-#define PORT 6969
 #define PACKET_SIZE 512
 
 class server {

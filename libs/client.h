@@ -13,9 +13,10 @@
 #define TFTP_PG_CLIENT_H
 
 #define BUFFER_SIZE	1024
-#define PORT 6969
+#define PORT 69
 #define MAXHOST 512
 #define TAM_BUFFER 10
+#define MAX_RETRIES 10
 
 class client {
 public:
