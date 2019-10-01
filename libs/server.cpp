@@ -43,11 +43,6 @@ void server::init() {
     printf("Local ip address: %s\n", myIP);
     printf("Local port : %u\n", myPort);
 
-    while (1){
-        request = recvfrom(socket_server, buffer, BUFFER_SIZE - 1, 0, (struct sockaddr *)&cliente, &longc);
-        if(request != -1)
-            break;
-    }
 
     FD_ZERO(&read_mask);
     FD_SET(socket_server, &read_mask);
