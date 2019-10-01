@@ -35,6 +35,7 @@ void helpers::get_my_ipv4() {
             {
                 struct sockaddr_in *s4 = (struct sockaddr_in *)ifa->ifa_addr;
                 in_addr = &s4->sin_addr;
+                ipsI[i] = s4->sin_addr.s_addr;
                 break;
             }
 

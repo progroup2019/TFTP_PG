@@ -16,7 +16,7 @@ server::server() {
     int optip;
     std::cin>>optip;
     servidor.sin_family = AF_INET;
-    servidor.sin_addr.s_addr = inet_addr(h->ips[optip].c_str());
+    servidor.sin_addr.s_addr = h->ipsI[optip];
     servidor.sin_port = htons(PORT);
     socket_server = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -43,7 +43,11 @@ void server::init() {
     printf("Local ip address: %s\n", myIP);
     printf("Local port : %u\n", myPort);
 
-
+    while (1){
+        request = recvfrom(socket_server, buffer, BUFFER_SIZE - 1, 0, (struct sockaddr *)&cliente, &longc);
+        if(request != -1)
+            break;
+    }
 
     FD_ZERO(&read_mask);
     FD_SET(socket_server, &read_mask);

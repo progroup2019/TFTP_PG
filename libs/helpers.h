@@ -11,6 +11,7 @@ public:
     helpers();
 
     std::string ips[10];
+    int ipsI[10];
     void get_my_ipv4();
     char ** get_my_ipv6();
     char * get_my_ip_public();
